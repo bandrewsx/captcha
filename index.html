@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAPTCHA Validation</title>
+    <title>Advanced CAPTCHA Validation</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,10 +18,15 @@
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        canvas {
-            border: 1px solid #ccc;
-            display: block;
-            margin: 10px auto;
+        .images img {
+            width: 100px;
+            height: 100px;
+            margin: 5px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .images img.selected {
+            border-color: blue;
         }
         input[type="text"] {
             width: 100%;
@@ -50,100 +55,82 @@
 <body>
     <div class="captcha-container">
         <h1>Verification</h1>
-        <p>Please solve this challenge:</p>
-        <canvas id="captchaCanvas" width="250" height="70"></canvas>
-        <input type="text" id="captchaInput" placeholder="Enter CAPTCHA text">
+        <p id="challengeText">Please solve this challenge:</p>
+        <div class="images" id="imageCaptcha" style="display: none;"></div>
         <button id="submitButton">Submit</button>
         <p class="error" id="errorText"></p>
-        <font color=gray><p>Powered by Knolcap</p></font>
     </div>
 
     <script>
-        // Generate a random CAPTCHA text
-        function generateCaptcha() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789(*&^%$#@!)AAAJSGABS';
-            let captcha = '';
-            for (let i = 0; i < 6; i++) {
-                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return captcha;
-        }
+        const params = new URLSearchParams(window.location.search);
+        const securityLevel = parseInt(params.get('security') || '2', 10);
+        const redirect = params.get('redirect');
+        const errorText = document.getElementById('errorText');
+        const challengeText = document.getElementById('challengeText');
+        const imageCaptcha = document.getElementById('imageCaptcha');
 
-        // Draw CAPTCHA on canvas with readable text, noise, and a textured background
-        function drawCaptcha(captcha) {
-            const canvas = document.getElementById('captchaCanvas');
-            const ctx = canvas.getContext('2d');
+        // Predefined images for the CAPTCHA
+        const imageOptions = [
+            { url: 'https://upload.wikimedia.org/wikipedia/commons/8/86/School_bus_in_the_USA.jpg', label: 'bus' },
+            { url: 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Large_red_car.jpg', label: 'car' },
+            { url: 'https://upload.wikimedia.org/wikipedia/commons/0/0d/Blue_Motorcycle.jpg', label: 'bike' },
+            { url: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Big_Rig_Truck.jpg', label: 'truck' },
+        ];
 
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw a random background pattern
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradient.addColorStop(0, '#f4f4f4');
-            gradient.addColorStop(1, '#e0e0e0');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw random colorful lines for noise
-            for (let i = 0; i < 8; i++) {
-                ctx.beginPath();
-                ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
-                ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
-                ctx.strokeStyle = `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.5)`;
-                ctx.lineWidth = Math.random() * 1.5;
-                ctx.stroke();
-            }
-
-            // Add CAPTCHA text with light distortion
-            ctx.font = '30px Arial';
-            ctx.fillStyle = '#333';
-            for (let i = 0; i < captcha.length; i++) {
-                const char = captcha.charAt(i);
-                const x = 30 + i * 35;
-                const y = 50;
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(Math.random() * 0.2 - 0.1); // Rotate slightly
-                ctx.fillText(char, -10, 10);
-                ctx.restore();
-            }
-
-            // Add small dots for additional noise
-            for (let i = 0; i < 30; i++) {
-                ctx.beginPath();
-                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 1.5, 0, 2 * Math.PI);
-                ctx.fillStyle = `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.8)`;
-                ctx.fill();
-            }
-        }
+        let captchaAnswer = '';
 
         // Initialize CAPTCHA
-        const captchaText = generateCaptcha();
-        drawCaptcha(captchaText);
+        function initializeCaptcha() {
+            if (securityLevel === 2) {
+                setupLevel2();
+            } else {
+                errorText.textContent = 'Invalid security level.';
+            }
+        }
 
-        document.getElementById('submitButton').addEventListener('click', function () {
-            const userInput = document.getElementById('captchaInput').value.trim();
-            const errorText = document.getElementById('errorText');
-            errorText.textContent = '';
+        // Level 2: Image-based CAPTCHA
+        function setupLevel2() {
+            imageCaptcha.style.display = 'block';
 
-            // Validate CAPTCHA
-            if (userInput === captchaText) {
-                const params = new URLSearchParams(window.location.search);
-                const redirect = params.get('redirect');
+            // Randomly select the challenge
+            const correctOption = imageOptions[Math.floor(Math.random() * imageOptions.length)];
+            captchaAnswer = correctOption.label;
+            challengeText.textContent = `Which image contains a ${captchaAnswer}?`;
+
+            // Shuffle and display images
+            const shuffledImages = imageOptions.sort(() => Math.random() - 0.5);
+            shuffledImages.forEach((option, index) => {
+                const img = document.createElement('img');
+                img.src = option.url;
+                img.alt = `Option ${index + 1}`;
+                img.dataset.label = option.label;
+                img.addEventListener('click', () => {
+                    document.querySelectorAll('.images img').forEach(img => img.classList.remove('selected'));
+                    img.classList.add('selected');
+                });
+                imageCaptcha.appendChild(img);
+            });
+        }
+
+        document.getElementById('submitButton').addEventListener('click', () => {
+            const selectedImage = document.querySelector('.images img.selected');
+            if (selectedImage && selectedImage.dataset.label === captchaAnswer) {
                 if (redirect) {
                     try {
                         const decodedUrl = atob(redirect);
                         window.location.href = decodedUrl;
                     } catch (e) {
-                        errorText.textContent = 'Invalid Configuration! Invalid Parameters, redirect URLs are encoded in base64.';
+                        errorText.textContent = 'Invalid Configuration! Redirect URL is not base64-encoded.';
                     }
                 } else {
-                    errorText.textContent = 'Invalid Configuration! Missing parameter redirect.';
+                    errorText.textContent = 'Invalid Configuration! Missing redirect parameter.';
                 }
             } else {
-                errorText.textContent = 'Sorry, We have detected that you are a robot.';
+                errorText.textContent = 'Incorrect! Please try again.';
             }
         });
+
+        initializeCaptcha();
     </script>
 </body>
 </html>
