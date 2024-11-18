@@ -49,10 +49,13 @@
 </head>
 <body>
     <div class="captcha-container">
+        <h1>Verification</h1>
+        <p>Please solve this challenge:</p>
         <canvas id="captchaCanvas" width="200" height="50"></canvas>
         <input type="text" id="captchaInput" placeholder="Enter CAPTCHA text">
         <button id="submitButton">Submit</button>
         <p class="error" id="errorText"></p>
+        <font color=gray><p>Powered by Knolcap</p></font>
     </div>
 
     <script>
@@ -66,17 +69,40 @@
             return captcha;
         }
 
-        // Draw CAPTCHA on canvas
+        // Draw CAPTCHA on canvas with a noisy background and lines
         function drawCaptcha(captcha) {
             const canvas = document.getElementById('captchaCanvas');
             const ctx = canvas.getContext('2d');
+
+            // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#f4f4f4';
+
+            // Draw a random background color
+            const colors = ['#f4f4f4', '#e3f2fd', '#fce4ec', '#e8f5e9'];
+            ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw random colorful lines for noise
+            for (let i = 0; i < 6; i++) {
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.strokeStyle = `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.7)`;
+                ctx.lineWidth = Math.random() * 2;
+                ctx.stroke();
+            }
+
+            // Add CAPTCHA text with random distortion
             ctx.font = '30px Arial';
             ctx.fillStyle = '#333';
-            ctx.setTransform(1, Math.random() * 0.2, Math.random() * 0.2, 1, 0, 0);
-            ctx.fillText(captcha, 10, 35);
+            for (let i = 0; i < captcha.length; i++) {
+                const char = captcha.charAt(i);
+                ctx.setTransform(1, Math.random() * 0.3, Math.random() * 0.3, 1, Math.random() * 5, Math.random() * 5);
+                ctx.fillText(char, 20 + i * 25, 35 + Math.random() * 10);
+            }
+
+            // Reset transformation
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
         // Initialize CAPTCHA
@@ -97,13 +123,13 @@
                         const decodedUrl = atob(redirect);
                         window.location.href = decodedUrl;
                     } catch (e) {
-                        errorText.textContent = 'Invalid redirect URL.';
+                        errorText.textContent = 'Invalid Configuration! Invalid Parameters, redirect URLs are encoded in base64.';
                     }
                 } else {
-                    errorText.textContent = 'Redirect URL missing.';
+                    errorText.textContent = 'Invalid Configuration! Missing parameter redirect.';
                 }
             } else {
-                errorText.textContent = 'CAPTCHA incorrect. Try again.';
+                errorText.textContent = 'Sorry, We have detected that you are a robot.';
             }
         });
     </script>
