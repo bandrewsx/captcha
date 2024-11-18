@@ -13,20 +13,40 @@
         .captcha-container {
             margin: 20px auto;
             padding: 20px;
-            width: 300px;
+            width: 400px;
             border: 1px solid #ccc;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        .images img {
-            width: 100px;
-            height: 100px;
-            margin: 5px;
-            cursor: pointer;
-            border: 2px solid transparent;
+        .theater-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
         }
-        .images img.selected {
-            border-color: blue;
+        .seat {
+            position: relative;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 5px;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        .seat img {
+            width: 80px;
+            height: 80px;
+            display: block;
+            margin: 0 auto;
+        }
+        .seat-label {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background-color: #000;
+            color: #fff;
+            font-size: 12px;
+            padding: 2px 5px;
+            border-radius: 3px;
         }
         input[type="text"] {
             width: 100%;
@@ -56,9 +76,8 @@
     <div class="captcha-container">
         <h1>Verification</h1>
         <p id="challengeText">Please solve this challenge:</p>
-        <canvas id="captchaCanvas" width="200" height="50" style="display: none;"></canvas>
-        <div class="images" id="imageCaptcha" style="display: none;"></div>
-        <input type="text" id="captchaInput" placeholder="Enter your answer" style="display: none;">
+        <div class="theater-grid" id="theaterGrid" style="display: none;"></div>
+        <input type="text" id="captchaInput" placeholder="Enter the seat (e.g., A3)">
         <button id="submitButton">Submit</button>
         <p class="error" id="errorText"></p>
     </div>
@@ -69,114 +88,79 @@
         const redirect = params.get('redirect');
         const errorText = document.getElementById('errorText');
         const challengeText = document.getElementById('challengeText');
-        const imageCaptcha = document.getElementById('imageCaptcha');
-        const captchaCanvas = document.getElementById('captchaCanvas');
+        const theaterGrid = document.getElementById('theaterGrid');
         const captchaInput = document.getElementById('captchaInput');
-        const ctx = captchaCanvas.getContext('2d');
 
         // Predefined images for CAPTCHA challenges
         const imageOptions = [
             { url: 'https://i.imgur.com/JGGK3oa.jpg', label: 'bus' }, // Bus
             { url: 'https://i.imgur.com/6T8qP3z.jpg', label: 'car' }, // Car
             { url: 'https://i.imgur.com/8ZrMJ5H.jpg', label: 'bike' }, // Bike
-            { url: 'https://i.imgur.com/cDuqSnh.jpg', label: 'truck' } // Truck
+            { url: 'https://i.imgur.com/cDuqSnh.jpg', label: 'truck' }, // Truck
+            { url: 'https://i.imgur.com/XJmEDxS.jpg', label: 'plane' }, // Plane
+            { url: 'https://i.imgur.com/XimvbHJ.jpg', label: 'boat' }, // Boat
+            { url: 'https://i.imgur.com/wSyJopU.jpg', label: 'train' }, // Train
+            { url: 'https://i.imgur.com/36FPjNr.jpg', label: 'helicopter' }, // Helicopter
+            { url: 'https://i.imgur.com/VWh3Ow1.jpg', label: 'scooter' } // Scooter
         ];
 
         let captchaAnswer = '';
 
-        // Generate a random CAPTCHA text
-        function generateCaptchaText() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-            let captcha = '';
-            for (let i = 0; i < 6; i++) {
-                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+        // Helper function to shuffle an array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
-            return captcha;
-        }
-
-        // Draw CAPTCHA on canvas
-        function drawCaptcha(captcha) {
-            ctx.clearRect(0, 0, captchaCanvas.width, captchaCanvas.height);
-            ctx.fillStyle = '#f4f4f4';
-            ctx.fillRect(0, 0, captchaCanvas.width, captchaCanvas.height);
-            ctx.font = '30px Arial';
-            ctx.fillStyle = '#333';
-            ctx.setTransform(1, Math.random() * 0.2, Math.random() * 0.2, 1, 0, 0);
-            ctx.fillText(captcha, 10, 35);
-
-            // Add random lines for difficulty
-            for (let i = 0; i < 5; i++) {
-                ctx.strokeStyle = `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},0.7)`;
-                ctx.beginPath();
-                ctx.moveTo(Math.random() * captchaCanvas.width, Math.random() * captchaCanvas.height);
-                ctx.lineTo(Math.random() * captchaCanvas.width, Math.random() * captchaCanvas.height);
-                ctx.stroke();
-            }
+            return array;
         }
 
         // Initialize CAPTCHA
         function initializeCaptcha() {
-            if (securityLevel === 1) {
-                setupLevel1();
-            } else if (securityLevel === 2) {
-                setupLevel2();
-            } else if (securityLevel === 3) {
+            if (securityLevel === 3) {
                 setupLevel3();
             } else {
-                errorText.textContent = 'Invalid security level.';
+                errorText.textContent = 'Invalid security level. Use level 3 for the theater CAPTCHA.';
             }
         }
 
-        // Level 1: Text-based CAPTCHA
-        function setupLevel1() {
-            captchaCanvas.style.display = 'block';
-            captchaInput.style.display = 'block';
+        // Level 3: Theater-style CAPTCHA
+        function setupLevel3() {
+            theaterGrid.style.display = 'grid';
 
-            captchaAnswer = generateCaptchaText();
-            drawCaptcha(captchaAnswer);
-        }
+            // Generate seat labels
+            const seatLabels = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'];
+            const shuffledImages = shuffleArray(imageOptions.slice(0, 9));
+            const shuffledSeats = shuffleArray(seatLabels);
 
-        // Level 2: Image-based CAPTCHA
-        function setupLevel2() {
-            imageCaptcha.style.display = 'block';
+            // Randomly choose a target object for the challenge
+            const targetObject = shuffledImages[Math.floor(Math.random() * shuffledImages.length)];
+            captchaAnswer = shuffledSeats[shuffledImages.indexOf(targetObject)];
+            challengeText.textContent = `Which seat contains the ${targetObject.label}?`;
 
-            const correctOption = imageOptions[Math.floor(Math.random() * imageOptions.length)];
-            captchaAnswer = correctOption.label;
-            challengeText.textContent = `Which image contains a ${captchaAnswer}?`;
+            // Populate the grid
+            shuffledImages.forEach((image, index) => {
+                const seatDiv = document.createElement('div');
+                seatDiv.className = 'seat';
 
-            const shuffledImages = imageOptions.sort(() => Math.random() - 0.5);
-            shuffledImages.forEach((option, index) => {
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'seat-label';
+                labelDiv.textContent = shuffledSeats[index];
+
                 const img = document.createElement('img');
-                img.src = option.url;
-                img.alt = `Option ${index + 1}`;
-                img.dataset.label = option.label;
-                img.addEventListener('click', () => {
-                    document.querySelectorAll('.images img').forEach(img => img.classList.remove('selected'));
-                    img.classList.add('selected');
-                });
-                imageCaptcha.appendChild(img);
+                img.src = image.url;
+                img.alt = image.label;
+
+                seatDiv.appendChild(labelDiv);
+                seatDiv.appendChild(img);
+                theaterGrid.appendChild(seatDiv);
             });
         }
 
-        // Level 3: Complex question
-        function setupLevel3() {
-            challengeText.textContent = 'What seat is the person facing forward sitting in? (e.g., A1, B2)';
-            captchaInput.style.display = 'block';
-            captchaAnswer = 'A1'; // Example hardcoded answer for this CAPTCHA level
-        }
-
         document.getElementById('submitButton').addEventListener('click', () => {
-            const userInput = captchaInput.value.trim();
-            const selectedImage = document.querySelector('.images img.selected');
+            const userInput = captchaInput.value.trim().toUpperCase();
 
-            let userAnswer = '';
-            if (securityLevel === 1 || securityLevel === 3) {
-                userAnswer = userInput;
-            } else if (securityLevel === 2) {
-                userAnswer = selectedImage ? selectedImage.dataset.label : '';
-            }
-
-            if (userAnswer === captchaAnswer) {
+            if (userInput === captchaAnswer) {
                 if (redirect) {
                     try {
                         const decodedUrl = atob(redirect);
