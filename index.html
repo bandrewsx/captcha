@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAPTCHA Validation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        .captcha-container {
+            margin: 20px auto;
+            padding: 20px;
+            width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        canvas {
+            border: 1px solid #ccc;
+            display: block;
+            margin: 10px auto;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="captcha-container">
+        <canvas id="captchaCanvas" width="200" height="50"></canvas>
+        <input type="text" id="captchaInput" placeholder="Enter CAPTCHA text">
+        <button id="submitButton">Submit</button>
+        <p class="error" id="errorText"></p>
+    </div>
+
+    <script>
+        // Generate a random CAPTCHA text
+        function generateCaptcha() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+            let captcha = '';
+            for (let i = 0; i < 6; i++) {
+                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return captcha;
+        }
+
+        // Draw CAPTCHA on canvas
+        function drawCaptcha(captcha) {
+            const canvas = document.getElementById('captchaCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#f4f4f4';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = '30px Arial';
+            ctx.fillStyle = '#333';
+            ctx.setTransform(1, Math.random() * 0.2, Math.random() * 0.2, 1, 0, 0);
+            ctx.fillText(captcha, 10, 35);
+        }
+
+        // Initialize CAPTCHA
+        const captchaText = generateCaptcha();
+        drawCaptcha(captchaText);
+
+        document.getElementById('submitButton').addEventListener('click', function () {
+            const userInput = document.getElementById('captchaInput').value.trim();
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = '';
+
+            // Validate CAPTCHA
+            if (userInput === captchaText) {
+                const params = new URLSearchParams(window.location.search);
+                const redirect = params.get('redirect');
+                if (redirect) {
+                    try {
+                        const decodedUrl = atob(redirect);
+                        window.location.href = decodedUrl;
+                    } catch (e) {
+                        errorText.textContent = 'Invalid redirect URL.';
+                    }
+                } else {
+                    errorText.textContent = 'Redirect URL missing.';
+                }
+            } else {
+                errorText.textContent = 'CAPTCHA incorrect. Try again.';
+            }
+        });
+    </script>
+</body>
+</html>
