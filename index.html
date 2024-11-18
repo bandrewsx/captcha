@@ -56,48 +56,94 @@
     <div class="captcha-container">
         <h1>Verification</h1>
         <p id="challengeText">Please solve this challenge:</p>
+        <canvas id="captchaCanvas" width="200" height="50" style="display: none;"></canvas>
         <div class="images" id="imageCaptcha" style="display: none;"></div>
+        <input type="text" id="captchaInput" placeholder="Enter your answer" style="display: none;">
         <button id="submitButton">Submit</button>
         <p class="error" id="errorText"></p>
     </div>
 
     <script>
         const params = new URLSearchParams(window.location.search);
-        const securityLevel = parseInt(params.get('security') || '2', 10);
+        const securityLevel = parseInt(params.get('security') || '1', 10);
         const redirect = params.get('redirect');
         const errorText = document.getElementById('errorText');
         const challengeText = document.getElementById('challengeText');
         const imageCaptcha = document.getElementById('imageCaptcha');
+        const captchaCanvas = document.getElementById('captchaCanvas');
+        const captchaInput = document.getElementById('captchaInput');
+        const ctx = captchaCanvas.getContext('2d');
 
-        // Predefined images for the CAPTCHA
+        // Predefined images for CAPTCHA challenges
         const imageOptions = [
-            { url: 'https://upload.wikimedia.org/wikipedia/commons/8/86/School_bus_in_the_USA.jpg', label: 'bus' },
-            { url: 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Large_red_car.jpg', label: 'car' },
-            { url: 'https://upload.wikimedia.org/wikipedia/commons/0/0d/Blue_Motorcycle.jpg', label: 'bike' },
-            { url: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Big_Rig_Truck.jpg', label: 'truck' },
+            { url: 'https://i.imgur.com/JGGK3oa.jpg', label: 'bus' }, // Bus
+            { url: 'https://i.imgur.com/6T8qP3z.jpg', label: 'car' }, // Car
+            { url: 'https://i.imgur.com/8ZrMJ5H.jpg', label: 'bike' }, // Bike
+            { url: 'https://i.imgur.com/cDuqSnh.jpg', label: 'truck' } // Truck
         ];
 
         let captchaAnswer = '';
 
+        // Generate a random CAPTCHA text
+        function generateCaptchaText() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+            let captcha = '';
+            for (let i = 0; i < 6; i++) {
+                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return captcha;
+        }
+
+        // Draw CAPTCHA on canvas
+        function drawCaptcha(captcha) {
+            ctx.clearRect(0, 0, captchaCanvas.width, captchaCanvas.height);
+            ctx.fillStyle = '#f4f4f4';
+            ctx.fillRect(0, 0, captchaCanvas.width, captchaCanvas.height);
+            ctx.font = '30px Arial';
+            ctx.fillStyle = '#333';
+            ctx.setTransform(1, Math.random() * 0.2, Math.random() * 0.2, 1, 0, 0);
+            ctx.fillText(captcha, 10, 35);
+
+            // Add random lines for difficulty
+            for (let i = 0; i < 5; i++) {
+                ctx.strokeStyle = `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},0.7)`;
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * captchaCanvas.width, Math.random() * captchaCanvas.height);
+                ctx.lineTo(Math.random() * captchaCanvas.width, Math.random() * captchaCanvas.height);
+                ctx.stroke();
+            }
+        }
+
         // Initialize CAPTCHA
         function initializeCaptcha() {
-            if (securityLevel === 2) {
+            if (securityLevel === 1) {
+                setupLevel1();
+            } else if (securityLevel === 2) {
                 setupLevel2();
+            } else if (securityLevel === 3) {
+                setupLevel3();
             } else {
                 errorText.textContent = 'Invalid security level.';
             }
+        }
+
+        // Level 1: Text-based CAPTCHA
+        function setupLevel1() {
+            captchaCanvas.style.display = 'block';
+            captchaInput.style.display = 'block';
+
+            captchaAnswer = generateCaptchaText();
+            drawCaptcha(captchaAnswer);
         }
 
         // Level 2: Image-based CAPTCHA
         function setupLevel2() {
             imageCaptcha.style.display = 'block';
 
-            // Randomly select the challenge
             const correctOption = imageOptions[Math.floor(Math.random() * imageOptions.length)];
             captchaAnswer = correctOption.label;
             challengeText.textContent = `Which image contains a ${captchaAnswer}?`;
 
-            // Shuffle and display images
             const shuffledImages = imageOptions.sort(() => Math.random() - 0.5);
             shuffledImages.forEach((option, index) => {
                 const img = document.createElement('img');
@@ -112,21 +158,37 @@
             });
         }
 
+        // Level 3: Complex question
+        function setupLevel3() {
+            challengeText.textContent = 'What seat is the person facing forward sitting in? (e.g., A1, B2)';
+            captchaInput.style.display = 'block';
+            captchaAnswer = 'A1'; // Example hardcoded answer for this CAPTCHA level
+        }
+
         document.getElementById('submitButton').addEventListener('click', () => {
+            const userInput = captchaInput.value.trim();
             const selectedImage = document.querySelector('.images img.selected');
-            if (selectedImage && selectedImage.dataset.label === captchaAnswer) {
+
+            let userAnswer = '';
+            if (securityLevel === 1 || securityLevel === 3) {
+                userAnswer = userInput;
+            } else if (securityLevel === 2) {
+                userAnswer = selectedImage ? selectedImage.dataset.label : '';
+            }
+
+            if (userAnswer === captchaAnswer) {
                 if (redirect) {
                     try {
                         const decodedUrl = atob(redirect);
                         window.location.href = decodedUrl;
                     } catch (e) {
-                        errorText.textContent = 'Invalid Configuration! Redirect URL is not base64-encoded.';
+                        errorText.textContent = 'Invalid redirect URL (not base64 encoded).';
                     }
                 } else {
-                    errorText.textContent = 'Invalid Configuration! Missing redirect parameter.';
+                    errorText.textContent = 'Missing redirect parameter.';
                 }
             } else {
-                errorText.textContent = 'Incorrect! Please try again.';
+                errorText.textContent = 'Incorrect answer! Please try again.';
             }
         });
 
