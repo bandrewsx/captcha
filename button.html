@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>reCAPTCHA Button</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f9f9f9;
+            font-family: Arial, sans-serif;
+        }
+        #recaptchaButton {
+            padding: 15px 30px;
+            background-color: #28a745;
+            color: #ffffff;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #recaptchaButton:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <button id="recaptchaButton">Verify You're Human</button>
+
+    <script>
+        const securityLevel = 3; // Set desired security level here (1-5)
+        const redirectUrl = btoa('https://example.com'); // Base64 encode your desired redirect URL
+
+        document.getElementById('recaptchaButton').addEventListener('click', () => {
+            window.location.href = `index.html?security=${securityLevel}&redirect=${redirectUrl}`;
+        });
+    </script>
+</body>
+</html>
