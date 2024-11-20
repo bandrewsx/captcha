@@ -1,107 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced CAPTCHA Validation</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-        }
-        .captcha-container {
-            margin: 20px auto;
-            padding: 20px;
-            width: 400px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .image-grid {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin: 20px 0;
-        }
-        .image-option {
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 5px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .image-option img {
-            width: 100px;
-            height: 100px;
-        }
-        .image-option:hover {
-            transform: scale(1.1);
-        }
-        .theater-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin: 20px 0;
-        }
-        .seat {
-            position: relative;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 5px;
-            text-align: center;
-            background-color: #f9f9f9;
-        }
-        .seat img {
-            width: 80px;
-            height: 80px;
-        }
-        .seat-label {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            background-color: #000;
-            color: #fff;
-            font-size: 12px;
-            padding: 2px 5px;
-            border-radius: 3px;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            margin: 10px 0;
-            font-size: 16px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .error {
-            color: red;
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-    <div class="captcha-container">
-        <h1>Verification</h1>
-        <p id="challengeText">Please solve this challenge:</p>
-        <canvas id="captchaCanvas" width="200" height="50" style="display: none;"></canvas>
-        <div class="image-grid" id="imageGrid" style="display: none;"></div>
-        <div class="theater-grid" id="theaterGrid" style="display: none;"></div>
-        <input type="text" id="captchaInput" placeholder="Enter your answer">
-        <button id="submitButton">Submit</button>
-        <p class="error" id="errorText"></p>
-    </div>
-
 <script>
     const params = new URLSearchParams(window.location.search);
     const securityLevel = parseInt(params.get('security') || '1', 10);
@@ -115,7 +11,6 @@
 
     let captchaAnswer = '';
 
-    // Predefined images for CAPTCHA challenges
     const imageOptions = [
         { url: 'https://trimet.org/bus/img/media.jpg', label: 'bus' },
         { url: 'https://imageio.forbes.com/specials-images/imageserve/5d35eacaf1176b0008974b54/2020-Chevrolet-Corvette-Stingray/0x0.jpg?format=jpg&crop=4560,2565,x790,y784,safe&width=960', label: 'car' },
@@ -130,7 +25,6 @@
 
     const wordsForAudioCaptcha = ["giraffe", "elephant", "zebra", "lion", "tiger", "rabbit", "monkey", "dog", "cat", "dolphin"];
 
-    // Helper function to shuffle arrays
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -139,7 +33,6 @@
         return array;
     }
 
-    // Level 1: Text CAPTCHA
     function setupLevel1() {
         captchaAnswer = generateCaptchaText();
         captchaCanvas.style.display = 'block';
@@ -162,7 +55,6 @@
         ctx.fillText(captchaAnswer, 50, 35);
     }
 
-    // Level 2: Image selection CAPTCHA
     function setupLevel2() {
         imageGrid.style.display = 'flex';
         captchaInput.style.display = 'none';
@@ -187,7 +79,6 @@
         });
     }
 
-    // Level 3: Theater grid CAPTCHA
     function setupLevel3() {
         theaterGrid.style.display = 'grid';
         const seatLabels = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'];
@@ -216,7 +107,6 @@
         });
     }
 
-    // Level 4: Sound CAPTCHA
     function setupLevel4() {
         imageGrid.style.display = 'none';
         captchaInput.style.display = 'block';
@@ -234,12 +124,14 @@
 
         const audioButton = document.createElement('button');
         audioButton.textContent = "Play Audio";
-        audioButton.style.marginTop = "10px";
+        audioButton.style.marginTop = "20px";
         audioButton.style.padding = "10px 20px";
+        audioButton.style.display = "block";
         audioButton.style.backgroundColor = "#4CAF50";
         audioButton.style.color = "white";
         audioButton.style.border = "none";
-        audioButton.style.borderRadius = "5px";
+        audioButton.style.cursor = "pointer";
+
         audioButton.addEventListener('click', () => {
             window.speechSynthesis.speak(utterance);
         });
@@ -247,7 +139,32 @@
         challengeText.appendChild(audioButton);
     }
 
-    // Handle success
+    function setupLevel5() {
+        imageGrid.style.display = 'none';
+        captchaInput.style.display = 'none';
+        document.getElementById('submitButton').style.display = 'block';
+        challengeText.textContent = "Do you remember all the pitchers in Major League Baseball?";
+        captchaAnswer = "no";
+
+        const yesButton = document.createElement('button');
+        const noButton = document.createElement('button');
+
+        yesButton.textContent = "Yes";
+        noButton.textContent = "No";
+
+        yesButton.style.marginRight = "10px";
+        yesButton.addEventListener('click', () => {
+            errorText.textContent = "Incorrect! Please try again.";
+        });
+
+        noButton.addEventListener('click', () => {
+            handleSuccess();
+        });
+
+        challengeText.appendChild(yesButton);
+        challengeText.appendChild(noButton);
+    }
+
     function handleSuccess() {
         if (redirect) {
             try {
@@ -260,14 +177,13 @@
         }
     }
 
-    // Initialize CAPTCHA based on security level
     if (securityLevel === 1) setupLevel1();
     else if (securityLevel === 2) setupLevel2();
     else if (securityLevel === 3) setupLevel3();
     else if (securityLevel === 4) setupLevel4();
+    else if (securityLevel === 5) setupLevel5();
     else errorText.textContent = 'Invalid security level.';
 
-    // Handle CAPTCHA submission
     document.getElementById('submitButton').addEventListener('click', () => {
         const userInput = captchaInput.value.trim().toLowerCase();
 
@@ -278,6 +194,3 @@
         }
     });
 </script>
-
-</body>
-</html>
