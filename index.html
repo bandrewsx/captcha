@@ -18,12 +18,6 @@
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        canvas {
-            margin: 20px 0;
-            border: 1px solid #ccc;
-            display: block;
-            margin: 10px auto;
-        }
         .image-grid {
             display: flex;
             justify-content: center;
@@ -134,7 +128,22 @@
             { url: 'https://img.li.me/content/uploads/HERO_SCOOTER.png?auto=compress&crop=focalpoint&fit=crop&fp-x=0.5&fp-y=0.5&h=1000&q=80&w=2058&s=e917b6891524c5119efdf126088ce92f', label: 'scooter' }
         ];
 
-        // Helper functions
+        // Helper function to shuffle the array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Level 1 CAPTCHA - Text CAPTCHA
+        function setupLevel1() {
+            captchaAnswer = generateCaptchaText();
+            captchaCanvas.style.display = 'block';
+            drawCaptcha();
+        }
+
         function generateCaptchaText() {
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
             return Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
@@ -148,23 +157,10 @@
             ctx.font = '30px Arial';
             ctx.fillStyle = '#333';
             ctx.setTransform(1, Math.random() * 0.2, Math.random() * 0.2, 1, 0, 0);
-            ctx.fillText(captchaAnswer, 10, 35);
+            ctx.fillText(captchaAnswer, 50, 35);
         }
 
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        function setupLevel1() {
-            captchaAnswer = generateCaptchaText();
-            captchaCanvas.style.display = 'block';
-            drawCaptcha();
-        }
-
+        // Level 2 CAPTCHA - Select image challenge
         function setupLevel2() {
             imageGrid.style.display = 'flex';
             const target = imageOptions[Math.floor(Math.random() * imageOptions.length)];
@@ -183,15 +179,41 @@
             });
         }
 
+        // Level 3 CAPTCHA - Theater grid
         function setupLevel3() {
-            // Implementation of level 3 remains the same
+            theaterGrid.style.display = 'grid';
+            const seatLabels = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'];
+            const shuffledImages = shuffleArray(imageOptions.slice(0, 9));
+            const shuffledSeats = shuffleArray(seatLabels);
+
+            const targetObject = shuffledImages[Math.floor(Math.random() * shuffledImages.length)];
+            captchaAnswer = shuffledSeats[shuffledImages.indexOf(targetObject)];
+            challengeText.textContent = `Which seat contains the ${targetObject.label}?`;
+
+            shuffledImages.forEach((image, index) => {
+                const seatDiv = document.createElement('div');
+                seatDiv.className = 'seat';
+
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'seat-label';
+                labelDiv.textContent = shuffledSeats[index];
+
+                const img = document.createElement('img');
+                img.src = image.url;
+                img.alt = image.label;
+
+                seatDiv.appendChild(labelDiv);
+                seatDiv.appendChild(img);
+                theaterGrid.appendChild(seatDiv);
+            });
         }
 
+        // Handle success after correct answer
         function handleSuccess() {
             if (redirect) {
                 try {
                     window.location.href = atob(redirect);
-                } catch {
+                } catch (e) {
                     errorText.textContent = 'Invalid redirect URL.';
                 }
             } else {
@@ -199,10 +221,22 @@
             }
         }
 
+        // Initialize CAPTCHA based on security level
         if (securityLevel === 1) setupLevel1();
         else if (securityLevel === 2) setupLevel2();
         else if (securityLevel === 3) setupLevel3();
         else errorText.textContent = 'Invalid security level.';
+
+        // Handle CAPTCHA submission
+        document.getElementById('submitButton').addEventListener('click', () => {
+            const userInput = captchaInput.value.trim().toUpperCase();
+
+            if (userInput === captchaAnswer) {
+                handleSuccess();
+            } else {
+                errorText.textContent = 'Incorrect answer! Please try again.';
+            }
+        });
     </script>
 </body>
 </html>
